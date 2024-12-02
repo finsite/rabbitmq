@@ -1,0 +1,52 @@
+replicaCount: 3
+
+image:
+  repository: rabbitmq
+  tag: 3.11-management
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5672
+  managementPort: 15672
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts: []
+  tls: []
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+rabbitmq:
+  extraConfig: |-
+    loopback_users = none
+    management.tcp.port = 15672
+    vm_memory_high_watermark.relative = 0.4
+    disk_free_limit.absolute = 2GB
+    queue_type = quorum
+
+resources:
+  limits:
+    memory: 512Mi
+    cpu: 500m
+  requests:
+    memory: 256Mi
+    cpu: 250m    
+
+# Uncomment the TLS section to enable TLS
+# tls:
+#   enabled: true
+#   certSecretName: rabbitmq-tls
+
+serviceAccount:
+  name: "" # Leave empty to use the default service account name (.Release.Name)
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80

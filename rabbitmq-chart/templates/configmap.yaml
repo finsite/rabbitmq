@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    app: rabbitmq
+    release: {{ .Release.Name }}
+data:
+  rabbitmq.conf: |
+    {{ .Values.rabbitmq.extraConfig | nindent 4 }}
+    load_definitions = /etc/rabbitmq/definitions.json
+  definitions.json: |-
+    {
+      "users": [
+        {
+          "name": "admin",
+          "password_hash": "hashed_password",
+          "tags": "administrator"
+        }
+      ],
+      "vhosts": [
+        {"name": "/"}
+      ],
+      "permissions": [
+        {
+          "user": "admin",
+          "vhost": "/",
+          "configure": ".*",
+          "write": ".*",
+          "read": ".*"
+        }
+      ],
+      "queues": [
+        {
+          "name": "task_queue",
+          "vhost": "/",
+          "durable": true
+        }
+      ]
+    }

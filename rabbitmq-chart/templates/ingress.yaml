@@ -1,0 +1,46 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-rabbitmq-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+    release: {{ .Release.Name }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | default "nginx" }}
+  rules:
+  {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Release.Name }}-rabbitmq
+                port:
+                  number: {{ $.Values.service.managementPort }}
+          - path: /amqp
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Release.Name }}-rabbitmq
+                port:
+                  number: {{ $.Values.service.port }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+  {{- range .Values.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . }}
+        {{- end }}
+      secretName: {{ .secretName }}
+  {{- end }}
+  {{- end }}
+{{- end }}

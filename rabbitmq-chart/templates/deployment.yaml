@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-rabbitmq
+  labels:
+    app: rabbitmq
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: rabbitmq
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+        release: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ (default .Release.Name .Values.serviceAccount.name) }}
+      containers:
+        - name: rabbitmq
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: amqp
+              containerPort: {{ .Values.service.port }}
+            - name: management
+              containerPort: {{ .Values.service.managementPort }}
+          env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-erlang-cookie
+                  key: erlang-cookie
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-default-user
+                  key: username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-default-user
+                  key: password
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+            - name: config
+              mountPath: /etc/rabbitmq
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: config
+          configMap:
+            name: rabbitmq-config
+      resources:
+        limits:
+          memory: {{ .Values.resources.limits.memory }}
+          cpu: {{ .Values.resources.limits.cpu }}
+        requests:
+          memory: {{ .Values.resources.requests.memory }}
+          cpu: {{ .Values.resources.requests.cpu }}

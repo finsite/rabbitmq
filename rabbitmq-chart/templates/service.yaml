@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-rabbitmq
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+    release: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: amqp
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+    - name: management
+      port: {{ .Values.service.managementPort }}
+      targetPort: {{ .Values.service.managementPort }}
+      protocol: TCP
+  selector:
+    app: rabbitmq
+    release: {{ .Release.Name }}

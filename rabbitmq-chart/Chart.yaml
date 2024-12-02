@@ -1,0 +1,7 @@
+apiVersion: v2
+name: rabbitmq-chart
+description: A Helm chart for RabbitMQ with best practices
+type: application
+version: 0.1.0
+appVersion: 3.11.0
+icon: https://www.rabbitmq.com/img/rabbitmq_logo_strap.png

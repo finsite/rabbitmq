@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-rabbitmq
+  labels:
+    app: rabbitmq
+    release: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: rabbitmq
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: rabbitmq
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: amqp
+              containerPort: {{ .Values.service.port }}
+            - name: management
+              containerPort: {{ .Values.service.managementPort }}
+          env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-erlang-cookie
+                  key: erlang-cookie
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+            - name: config
+              mountPath: /etc/rabbitmq
+            {{- if and .Values.tls (default false .Values.tls.enabled) }}
+            - name: tls
+              mountPath: /etc/rabbitmq/tls
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-config
+        {{- if and .Values.tls (default false .Values.tls.enabled) }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.certSecretName }}
+        {{- end }}

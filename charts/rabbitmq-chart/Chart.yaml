@@ -1,0 +1,7 @@
+apiVersion: v2
+name: rabbitmq-chart
+description: A Helm chart for RabbitMQ with advanced configurations
+type: application
+version: 0.3.0
+appVersion: 3.12.1
+
