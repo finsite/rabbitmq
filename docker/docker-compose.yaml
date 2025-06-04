@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  rabbitmq1:
+    image: rabbitmq:management
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=secretcookie
+      - RABBITMQ_DEFAULT_USER=admin        # Set custom admin username
+      - RABBITMQ_DEFAULT_PASS=adminpassword  # Set custom admin password
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=256MB
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK_PCT=0.4
+      - RABBITMQ_HA_MODE=all
+    ports:
+      - "15672:15672"  # RabbitMQ management UI
+      - "5672:5672"    # RabbitMQ messaging port
+    networks:
+      - rabbitmq_net
+    volumes:
+      - rabbitmq1-data:/var/lib/rabbitmq
+    hostname: rabbitmq1
+    container_name: rabbitmq1
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 20s
+
+  rabbitmq2:
+    image: rabbitmq:management
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=secretcookie
+      - RABBITMQ_DEFAULT_USER=admin        # Set custom admin username
+      - RABBITMQ_DEFAULT_PASS=adminpassword  # Set custom admin password
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=256MB
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK_PCT=0.4
+      - RABBITMQ_HA_MODE=all
+    networks:
+      - rabbitmq_net
+    depends_on:
+      - rabbitmq1
+    volumes:
+      - rabbitmq2-data:/var/lib/rabbitmq
+    hostname: rabbitmq2
+    container_name: rabbitmq2
+    command: >
+      bash -c "sleep 5 && rabbitmqctl stop_app && rabbitmqctl join_cluster rabbit@rabbitmq1 && rabbitmqctl set_policy ha-all \"^\" '{\"ha-mode\":\"all\", \"ha-sync-mode\":\"automatic\"}' && rabbitmqctl start_app"
+
+  rabbitmq3:
+    image: rabbitmq:management
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=secretcookie
+      - RABBITMQ_DEFAULT_USER=admin        # Set custom admin username
+      - RABBITMQ_DEFAULT_PASS=adminpassword  # Set custom admin password
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=256MB
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK_PCT=0.4
+      - RABBITMQ_HA_MODE=all
+    networks:
+      - rabbitmq_net
+    depends_on:
+      - rabbitmq1
+    volumes:
+      - rabbitmq3-data:/var/lib/rabbitmq
+    hostname: rabbitmq3
+    container_name: rabbitmq3
+    command: >
+      bash -c "sleep 5 && rabbitmqctl stop_app && rabbitmqctl join_cluster rabbit@rabbitmq1 && rabbitmqctl set_policy ha-all \"^\" '{\"ha-mode\":\"all\", \"ha-sync-mode\":\"automatic\"}' && rabbitmqctl start_app"
+
+  rabbitmq_exporter:
+    image: kbudde/rabbitmq-exporter
+    environment:
+      - RABBITMQ_URI=http://rabbitmq1:15672
+    ports:
+      - "9419:9419"
+    networks:
+      - rabbitmq_net
+
+networks:
+  rabbitmq_net:
+
+volumes:
+  rabbitmq1-data:
+  rabbitmq2-data:
+  rabbitmq3-data:
